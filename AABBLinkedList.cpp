@@ -71,7 +71,6 @@ GLdouble AABBLinkedList::GetMaxX (int ptrCount)
 	else 
 		return NULL;
 }
-
 //--------------------------------------------------------------------------------------
 
 GLdouble AABBLinkedList::GetMinX (int ptrCount)

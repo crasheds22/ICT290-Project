@@ -1,23 +1,9 @@
-#include <math.h>
 #include <GL/glut.h>
+#include <math.h>
 #include <time.h>
 
-//#include <windows.h> // only used if mouse is required (not portable)
 #include "camera.h"
 #include "texturedPolygons.h"
-
-//--------------------------------------------------------------------------------------
-
-int i;
-int j;
-int k;
-
-#define PI 3.1415962654
-
-// USE THESE STTEINGS TO CHANGE SPEED (on different spec computers)
-// Set speed (steps)
-GLdouble movementSpeed = 10.0;
-GLdouble rotationSpeed = 0.005;
 
 // TEXTURE IMAGE AXIS
 #define XY		0
@@ -31,7 +17,7 @@ GLdouble rotationSpeed = 0.005;
 #define XY_PLAIN	1
 #define ZY_PLAIN	2
 
-// TEXTURES----------------------------------------------------------------------------------------
+// TEXTURES
 // Grass Textures
 #define GRASS						1
 #define GRASS_2						2
@@ -277,73 +263,6 @@ GLdouble rotationSpeed = 0.005;
 #define EXIT						219
 #define NO_EXIT						222
 
-// 223 Next
-// New --------------------------------------------------------------------------------
-#define STAIRS_TO_AFTER_HOURS		223
-#define BRIDGE_LEFT_1				224
-#define BRIDGE_LEFT_2				225
-#define BRIDGE_LEFT_3				226
-#define BRIDGE_LEFT_4				227
-#define BRIDGE_LEFT_5				228
-#define BRIDGE_RIGHT_1				229
-#define BRIDGE_RIGHT_2				230
-#define BRIDGE_RIGHT_3				231
-#define BRIDGE_RIGHT_4				232
-#define BRIDGE_RIGHT_5				233
-
-//234 next
-
-//--------------------------------------------------------------------------------------
-
-GLdouble stepIncrement;
-GLdouble angleIncrement;
-int frameCount = 0;
-clock_t lastClock = 0;
-
-// ratio of screen
-float ratio;
-// screen width and height
-int width, height;
-
-// display campus map
-bool DisplayMap = false;
-// display welcome screen
-bool DisplayWelcome = true;
-// display exit screen
-bool DisplayExit = false;
-// display light fittings
-bool lightsOn;
-// display ECL block
-bool displayECL = true;
-
-// varibles used for tarnslating graphics etc
-GLdouble step, step2, stepLength;
-
-// Glut Cylinder
-GLUquadricObj *glu_cylinder;
-
-// Stores raw image file
-unsigned char* image = NULL;
-
-// objects
-Camera cam;
-TexturedPolygons tp;
-
-// initializes setting
-void myinit();
-
-// display functions
-void Display();
-void reshape(int w, int h);
-void keys(unsigned char key, int x, int y);
-
-// keyboard and mouse functions
-void movementKeys(int key, int x, int y);
-void releaseKey(int key, int x, int y);
-void releaseKeys(unsigned char key, int x, int y);
-void Mouse(int button, int state, int x, int y);
-void mouseMove(int x, int y);
-
 // calls display functions below to draw the backdrops
 void DrawBackdrop();
 // functions to display display lists (images) and bind them to a texture
@@ -367,9 +286,7 @@ void DisplayRedPosts ();
 void DisplayRoof();
 void DisplayStepBricks ();
 void DisplayLights ();
-//void DisplayECL ();
-
-void DisplayBridge(); //-----------------------------------------------------------------------------------
+void DisplayECL ();
 
 // calls functions to create display lists (below)
 void CreateTextureList();
@@ -397,13 +314,11 @@ void DrawAngledRoofBeam (int listNo, GLdouble x, GLdouble y, GLdouble z, GLdoubl
 void DrawAngledRoofBeam2 (int listNo, GLdouble x, GLdouble y, GLdouble z, GLdouble beamSize);
 void DrawStepBricks ();
 void DrawMapExit ();
-//void DrawECL ();
+/*void DrawECL ();
 
-void DrawBridge(); //-----------------------------------------------------------------------------------*/
-
-//void BindBridgeWall(GLint LR);
-//void BindBuildingWall();
-//void BindWallPosts(GLint LR);
+void BindBridgeWall(GLint LR);
+void BindBuildingWall();
+void BindWallPosts(GLint LR);*/
 
 void IncrementFrameCount();
 
@@ -416,365 +331,6 @@ void CreatePlains();
 
 // deletes image and clears memory
 void DeleteImageFromMemory(unsigned char* tempImage);
-
-//--------------------------------------------------------------------------------------
-//  Main function 
-//--------------------------------------------------------------------------------------
-int main(int argc, char **argv)
-{
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100,100);
-	glutInitWindowSize(800,500);
-	glutCreateWindow("Murdoch University Campus Tour");
-
-	myinit();
-
-	glutIgnoreKeyRepeat(1);
-	glutSpecialFunc(movementKeys);
-	glutSpecialUpFunc(releaseKey);
-	glutKeyboardUpFunc (releaseKeys);
-	glutKeyboardFunc(keys);
-
-	glutDisplayFunc(Display);
-	glutIdleFunc(Display);
-	glutMouseFunc(Mouse);
-	
-	// ONLY USE IF REQUIRE MOUSE MOVEMENT
-	//glutPassiveMotionFunc(mouseMove);
-	//ShowCursor(FALSE);
-
-	glutReshapeFunc(reshape);
-	glutMainLoop();
-	return(0);
-}
-
-//--------------------------------------------------------------------------------------
-//  Initialize Settings
-//--------------------------------------------------------------------------------------
-void myinit()
-{
-	// set background (sky colour)
-	glClearColor(97.0/255.0, 140.0/255.0, 185.0/255.0, 1.0);
-	
-	// set perpsective
-	gluLookAt(0.0, 1.75, 0.0, 
-		      0.0, 1.75, -1,
-			  0.0f,1.0f, 0.0f);
-	
-	// settings for glut cylinders
-	glu_cylinder = gluNewQuadric();
-    gluQuadricTexture(glu_cylinder, GL_TRUE );
-
-	// set the world co-ordinates (used to set quadrants for bounding boxes)
-	cam.SetWorldCoordinates(36000.0, 43200.0);
-	// turn collision detection on
-	cam.SetCollisionDetectionOn(true);
-	// set number of bounding boxes required
-	//cam.SetNoBoundingBoxes(19); -----------------------Original
-	cam.SetNoBoundingBoxes(22); //-----------------------New
-	// set starting position of user
-	//cam.Position(32720.0, 9536.0, 4800.0, 180.0);
-	cam.Position(4660.0, 10450.0, 43000.0, 180.0); //----------------------------------------------------------
-	
-	CreatePlains();	
-	
-	// creates bounding boxes and places in array
-	CreateBoundingBoxes();
-	// copies bounding boxes from array to linked lists (one fopr each quadrant)
-	cam.InitiateBoundingBoxes();
-	
-	// load texture images and create display lists
-	CreateTextureList();
-	CreateTextures();
-}
-
-//--------------------------------------------------------------------------------------
-//  Main Display Function
-//--------------------------------------------------------------------------------------
-void Display()
-{
-	// check for movement
-	cam.CheckCamera();
-
-	std::cout << "X:" << cam.GetLR() << " Y:" << cam.GetUD() << " Z:" << cam.GetFB() << std::endl;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// DISPLAY TEXTURES
-	//enable texture mapping
-	glEnable (GL_TEXTURE_2D);
-	glPushMatrix();	
-		// displays the welcome screen
-		if (DisplayWelcome) 
-			cam.DisplayWelcomeScreen (width, height, 1, tp.GetTexture(WELCOME));	
-		// displays the exit screen
-		if (DisplayExit) 
-			cam.DisplayWelcomeScreen (width, height, 0, tp.GetTexture(EXIT) );
-		// displays the map
-		if (DisplayMap) 
-			cam.DisplayMap(width, height, tp.GetTexture(MAP));
-		// display no exit sign (position check should really be in an object, but didn't have time)
-		if ((cam.GetLR() > 35500.0) && (cam.GetFB() < 25344.0) ||
-			(cam.GetLR() > 34100.0) && (cam.GetFB() > 41127.0))
-		{
-			cam.DisplayNoExit(width, height,tp.GetTexture(NO_EXIT));
-		}
-		// set the movement and rotation speed according to frame count
-		IncrementFrameCount();
-
-		cam.SetMoveSpeed (stepIncrement);
-		cam.SetRotateSpeed (angleIncrement);
-
-		// display images
-		DrawBackdrop();
-	glPopMatrix();
-	glDisable (GL_TEXTURE_2D); 
-
-	// clear buffers
-	glFlush();
-	glutSwapBuffers();
-}
-
-//--------------------------------------------------------------------------------------
-void reshape(int w, int h)
-{
-	width = w;
-	height = h;
-	// Prevent a divide by zero, when window is too short
-	// (you cant make a window of zero width).
-	if (h == 0) 
-		h = 1;
-	ratio = 1.0f * w / h;
-
-	// Reset the coordinate system before modifying
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glViewport(0, 0, w, h);
-	gluPerspective(45,ratio,1,250000);	
-	glMatrixMode(GL_MODELVIEW);
-}
-
-//--------------------------------------------------------------------------------------
-// Keyboard Functions
-//--------------------------------------------------------------------------------------
-void movementKeys(int key, int x, int y)
-{
-	switch (key)
-	{
-		case GLUT_KEY_LEFT :
-			cam.DirectionRotateLR(-1);
-			break;
-
-		case GLUT_KEY_RIGHT : 
-			cam.DirectionRotateLR(1);
-			break;
-
-		case GLUT_KEY_UP : 
-			cam.DirectionLookUD(1);
-			break;
-
-		case GLUT_KEY_DOWN : 
-			cam.DirectionLookUD(-1);
-			break;
-	}
-}
-
-//--------------------------------------------------------------------------------------
-void releaseKey(int key, int x, int y)
-{
-	switch (key)
-	{
-		// rotate left or right
-		case GLUT_KEY_LEFT : 
-		case GLUT_KEY_RIGHT : 
-			cam.DirectionRotateLR(0);			
-		break;
-		// move backwards or forwards
-		case GLUT_KEY_UP : 
-		case GLUT_KEY_DOWN : 
-			cam.DirectionLookUD(0);
-		break;
-	}
-}
-
-//--------------------------------------------------------------------------------------
-void keys(unsigned char key, int x, int y)
-{
-	int i = 0;
-	switch (key)
-	{
-		// step left
-		case 'A':
-		case 'a':
-			cam.DirectionLR(-1);
-			break;
-		// step right
-		case 'D':
-		case 'd':
-			cam.DirectionLR(1);
-		break;
-		// step forward
-		case 'W':
-		case 'w':
-			cam.DirectionFB(1);
-			break;
-		// step back
-		case 'S':
-		case 's':
-			cam.DirectionFB(-1);
-		break;
-		// display campus map
-		case 'm':
-		case 'M':
-		{
-			if (DisplayMap)
-			{
-				DisplayMap = false;
-			}
-			else
-			{
-				DisplayMap = true;
-			}
-		}
-		break;
-		// exit tour (escape key)
-		case 27:
-			{
-				cam.SetRotateSpeed (0.0f);
-				cam.SetMoveSpeed (0.0f);
-				DisplayExit = true;
-			}
-		break;
-		// display welcome page (space key)
-		case ' ':
-			{
-				if (DisplayWelcome)
-				{
-					cam.SetRotateSpeed (rotationSpeed);
-					cam.SetMoveSpeed (movementSpeed);
-					DisplayWelcome = false;
-				}
-				else
-				{
-					cam.SetRotateSpeed (0.0f);
-					cam.SetMoveSpeed (0.0f);
-					DisplayWelcome = true;
-				}
-			}
-		break;
-		// display light fittings
-		case 'l':
-		case 'L':
-		{
-			if (lightsOn)
-			{
-				lightsOn = false;
-			}
-			else
-			{
-				lightsOn = true;
-			}
-		}
-		break;
-		
-		case 'P':
-		case 'p':
-		{
-			// Display ECL Block
-			if (displayECL)
-			{
-				displayECL = false;
-			}
-			else
-			{
-				displayECL = true;
-			}
-		}
-		break;
-		
-	}
-}
-
-//--------------------------------------------------------------------------------------
-void releaseKeys(unsigned char key, int x, int y)
-{
-	switch (key)
-	{
-		// step left or right
-		case 'A' :
-		case 'a' :
-		case 'D' :
-		case 'd' :
-			cam.DirectionLR(0);
-		break;
-		// look left up or down
-		case 'W' :
-		case 'w' :
-		case 'S' :
-		case 's' :
-			cam.DirectionFB(0);
-		break;
-	}
-}
-
-//--------------------------------------------------------------------------------------
-//  Mouse Buttons
-//--------------------------------------------------------------------------------------
-void Mouse(int button, int state, int x, int y)
-{
-	// exit tour if clicked on exit splash screen
-	if ((button == GLUT_LEFT_BUTTON) && (state == GLUT_DOWN))
-	{
-		if ((DisplayExit) && (x <= width/2.0 + 256.0) && (x >= width/2.0 - 256.0)
-			&& (y <= height/2.0 + 256.0) && (y >= height/2.0 - 256.0))
-		{
-			DeleteImageFromMemory(image);
-			exit(1);
-		}
-  	 }
-}
-
-//--------------------------------------------------------------------------------------
-//  Mouse Movements (NOT USED)
-//  Can be used to rotate around screen using mouse, but keyboard used instead
-//--------------------------------------------------------------------------------------
-void mouseMove(int x, int y)
-{
-		if (x < 0)
-			cam.DirectionRotateLR(0);
-		else if (x > width)
-			cam.DirectionRotateLR(0);
-		else if (x > width/2.0)
-		{
-			cam.DirectionRotateLR(1);
-			Display();
-			glutWarpPointer(width/2.0,height/2.0);
-		}
-		else if (x < width/2.0)
-		{
-			cam.DirectionRotateLR(-1);
-			Display();
-			glutWarpPointer(width/2.0,height/2.0);
-		}
-		else
-			cam.DirectionRotateLR(0);
-		if (y < 0 || y > height)
-			cam.DirectionLookUD(0);
-
-		else if (y > height/2.0) {
-			cam.DirectionLookUD(-1);
-			Display();
-			glutWarpPointer(width/2.0,height/2.0);
-		}
-		else if (y < height/2.0) {
-			cam.DirectionLookUD(1);
-			Display();
-			glutWarpPointer(width/2.0,height/2.0);
-		}
-		else
-			cam.DirectionLookUD(0);
-}
 
 //--------------------------------------------------------------------------------------
 // Set up bounding boxes for collsion detection
@@ -882,28 +438,6 @@ void CreateBoundingBoxes()
 	cam.SetAABBMinX(16, 31444.0);
 	cam.SetAABBMaxZ(16, 10395.0);
 	cam.SetAABBMinZ(16, 4590.0);
-
-	//-------------------------------------------------------------------------------------------------
-	//Bridge wall left
-	cam.SetAABBMaxX(17, 4850.0);
-	cam.SetAABBMinX(17, 4750.0);
-	cam.SetAABBMaxZ(17, 62000.0);
-	cam.SetAABBMinZ(17, 45300.0);
-	cam.SetAABBMaxY(17, 15000.0);
-	cam.SetAABBMinY(17, 10000.0);
-
-	//Bridge wall right
-	cam.SetAABBMaxX(18, 2750.0);
-	cam.SetAABBMinX(18, 2650.0);
-	cam.SetAABBMaxZ(18, 62000.0);
-	cam.SetAABBMinZ(18, 45300.0);
-
-	//Stairs to after hours
-	cam.SetAABBMaxX(19, 7000.0);
-	cam.SetAABBMinX(19, 4850.0);
-	cam.SetAABBMaxZ(19, 45300.0);
-	cam.SetAABBMinZ(19, 45400.0);
-
 }
 
 //--------------------------------------------------------------------------------------
@@ -952,35 +486,9 @@ void CreatePlains()
 			step -= 48.0;
 		}
 	}
-	
-	//----------------------------------------------------------------------------------------------------------
-	//ECL first steps down
-	step = 10450.0;
-	stepLength = 62100.0;
-	for (i = 0; i < 10; i++)
-	{
-		cam.SetPlains(FLAT_PLAIN, 3225.0, 4275.0, step, step, stepLength, stepLength + 42.0);
-		step -= 48.0;
-		stepLength += 142.0;
-	}
-
-	//ECL stop between steps
-	cam.SetPlains(FLAT_PLAIN, 3225.0, 5325.0, 10018.0, 10018.0, 63520.0, 64520.0);
-
-	//ECL second steps
-	step = 10018.0;
-	stepLength = 63520.0;
-	for (i = 0; i < 10; i++)
-	{
-		cam.SetPlains(FLAT_PLAIN, 4275.0, 5325.0, step, step, stepLength, stepLength + 42.0);
-		step -= 48.0;
-		stepLength -= 142.0;
-	}
-
-	//-----------------------------------------------------------------------------------------------------------
 
 	// temp plain to take down to ECL1
-	//cam.SetPlains (ZY_PLAIN, 3200.0, 4800.0 , 10450.0, 9370.0, 53400.0, 57900.0);
+	cam.SetPlains (ZY_PLAIN, 3200.0, 4800.0 , 10450.0, 9370.0, 53400.0, 57900.0);
 }
 
 //--------------------------------------------------------------------------------------
@@ -1004,7 +512,7 @@ void CreateTextures()
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
 	// set texture count
-	tp.SetTextureCount(300);
+	tp.SetTextureCount(250);
 
 	// load and create textures
 	image = tp.LoadTexture("data/abovechanctext.raw", 128, 1024);
@@ -1672,43 +1180,6 @@ void CreateTextures()
 	image = tp.LoadTexture("data/thanks.raw", 512, 512);
 	tp.CreateTexture(219, image, 512, 512);
 
-	//-----------------------------Bridge images--------------------------------------------------------------
-
-	image = tp.LoadTexture("data/ECL/stairway.raw", 2048, 2048);
-	tp.CreateTexture(STAIRS_TO_AFTER_HOURS, image, 2048, 2048);//*/
-
-	image = tp.LoadTexture("data/ECL/bridgeLeft1.raw",1024, 256);
-	tp.CreateTexture(BRIDGE_LEFT_1, image, 1024, 256);
-
-	image = tp.LoadTexture("data/ECL/bridgeLeft2.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_LEFT_2, image, 1024, 256);
-
-	image = tp.LoadTexture("data/ECL/bridgeLeft3.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_LEFT_3, image, 1024, 256);
-
-	image = tp.LoadTexture("data/ECL/bridgeLeft4.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_LEFT_4, image, 1024, 256);
-	
-	image = tp.LoadTexture("data/ECL/bridgeLeft5.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_LEFT_5, image, 1024, 256);
-	
-	image = tp.LoadTexture("data/ECL/bridgeRight1.raw", 1024, 1024);
-	tp.CreateTexture(BRIDGE_RIGHT_1, image, 1024, 1024);
-	
-	image = tp.LoadTexture("data/ECL/bridgeRight2.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_RIGHT_2, image, 1024, 256);
-	
-	image = tp.LoadTexture("data/ECL/bridgeRight3.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_RIGHT_3, image, 1024, 256);
-	
-	image = tp.LoadTexture("data/ECL/bridgeRight4.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_RIGHT_4, image, 1024, 256);
-	
-	image = tp.LoadTexture("data/ECL/bridgeRight5.raw", 1024, 256);
-	tp.CreateTexture(BRIDGE_RIGHT_5, image, 1024, 256);
-
-	//-------------------------------------------------------------------------------------------------*/
-
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);	
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -1740,8 +1211,6 @@ void DrawBackdrop()
 	DisplayRoof();
 	DisplayStepBricks ();
 
-	DisplayBridge(); //----------------------------------------------------------------------------------*/
-	
 	if (lightsOn)
 		DisplayLights ();
 }
@@ -2393,12 +1862,10 @@ void DisplayMainPosts ()
 	step = 0.0;
 	stepLength = 0.0;
 	step2 = 0.0;
-	//
 	for (int j = 0; j < 2; j++)
 	{
 		glPushMatrix();	
 			glTranslatef(stepLength, 0.0, step2);
-			
 			for (int i = 0; i < 17; i++)
 			{		
 				glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
@@ -2410,7 +1877,6 @@ void DisplayMainPosts ()
 					glTranslatef(0.0, 0.0, step + 128.0);
 					glCallList(18);
 				glPopMatrix();
-				
 				if ((i == 7) && (j ==0))	// between chanc and phys sci
 				{
 					glPushMatrix();	
@@ -2432,7 +1898,6 @@ void DisplayMainPosts ()
 					glTranslatef(128.0, 0.0, step);
 					glCallList(19);
 				glPopMatrix();
-				
 				if ((i == 7) && (j ==0))	// between chanc and phys sci
 				{
 					glPushMatrix();	
@@ -2442,10 +1907,8 @@ void DisplayMainPosts ()
 				}
 				step += 1930.0;
 			}
-
 			stepLength -= 27192.0;
 			step2 -= 32810.0;
-		
 		glPopMatrix();
 	}
 
@@ -2454,44 +1917,36 @@ void DisplayMainPosts ()
 	for (int i = 0; i < 13; i++)
 	{		
 		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
-		
 		glPushMatrix();	
 			glTranslatef(step, 0.0, 30880.0);
 			glCallList(18);
 		glPopMatrix();
-		
 		glPushMatrix();
 			glTranslatef(step, 0.0, 31008.0);
 			glCallList(18);
 		glPopMatrix();
 		
 		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST_2));
-		
 		glPushMatrix();
 			glTranslatef(step, 0.0, 30880.0);
 			glCallList(19);
 		glPopMatrix();
-		
 		glPushMatrix();
 			glTranslatef(step + 128.0, 0.0, 30880.0);
 			glCallList(19);
 		glPopMatrix();
-		
 		step -= 1940.0;
 	}
 
 	// first on chanc steps
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
 	glCallList(51);
-	
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, 128.0);
 		glCallList(51);
 	glPopMatrix();
-	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST_2));
 	glCallList(52);
-	
 	glPushMatrix();
 		glTranslatef(128.0, 0.0, 0.0);
 		glCallList(52);
@@ -2832,40 +2287,27 @@ void DrawLibraryPosts ()
 void DisplayPavement ()
 {
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(PAVEMENT));
-	
-	for (int i = 72; i < 74; i ++) 
-		glCallList(i);
-	
+	for (int i = 72; i < 74; i ++) glCallList(i);
 	glCallList(28);
-	
-	for (i = 81; i < 89; i ++) 
-		glCallList(i);
-	
+	for (i = 81; i < 89; i ++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, 1920.0);
 		glCallList(86);
 	glPopMatrix();
 
-	for (i = 247; i < 250; i ++) 
-		glCallList(i);
-	
+	for (i = 247; i < 250; i ++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, 8640.0);
 		glCallList(248);
 	glPopMatrix();
-	
 	glCallList(241);
 	glCallList(428);
 	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(PAVEMENT_TOP));
-	for (i = 91; i < 93; i ++) 
-		glCallList(i);
-	
+	for (i = 91; i < 93; i ++) glCallList(i);
 	glCallList(246);
 	glCallList(243);
-	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(PAVEMENT_TOP_FLIP));
-	
 	glCallList(74);
 	glCallList(245);
 	glCallList(244);
@@ -2895,11 +2337,8 @@ void DisplayPavement ()
 	glCallList(94);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(PAVEMENT_FLIP));
-	for (i = 89; i < 91; i ++) 
-		glCallList(i);
-	
+	for (i = 89; i < 91; i ++) glCallList(i);
 	glCallList(240);
-	
 	glPushMatrix();
 		glTranslatef(-26848.0, 0.0, 0.0);
 		glCallList(240);
@@ -2920,10 +2359,7 @@ void DrawPavement ()
 	tp.CreateDisplayList (XZ, 246, 64.0, 128.0, 32656.0, 10000.0, 42928.0, 15.0, 2.0); // gcl1 door way
 	tp.CreateDisplayList (XZ, 245, 64.0, 128.0, 24080.0, 10000.0, 42928.0, 3.0, 1.5); // gcl1 door way
 	tp.CreateDisplayList (XZ, 244, 64.0, 128.0, 8189.0, 10000.0, 42928.0, 44.8, 1.80); // library door way
-	
-	//Modified
-	tp.CreateDisplayList (XZ, 243, 64.0, 128.0, 2576.0, 10000.0, 42928.0, 36.0, 150.0);	// entrance to IT block
-	
+	tp.CreateDisplayList (XZ, 243, 64.0, 128.0, 2576.0, 10000.0, 42928.0, 36.0, 21.0);	// entrance to IT block
 	tp.CreateDisplayList (XZ, 242, 64.0, 128.0, 4848.0, 10000.0, 42928.0, 27.5, 21.0);	// entrance to IT block
 	tp.CreateDisplayList (XZ, 241, 128.0, 64.0, 2096.0, 10000.0, 41168.0, 4.5, 29.0);	// entance to psch block
 	tp.CreateDisplayList (XZ, 240, 128.0, 64.0, 31568.0, 10000.0, 40816.0, 1.0, 1.0);	// corner space filler
@@ -2941,7 +2377,6 @@ void DrawPavement ()
 			glVertex3f(31568.0, 10000.0, 40816.0);
 		glEnd();
 	glEndList();
-
 	glNewList(91, GL_COMPILE);
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0, 0.0);
@@ -2954,7 +2389,6 @@ void DrawPavement ()
 			glVertex3f(31504.0, 10000.0, 43056.0);
 		glEnd();
 	glEndList();
-
 	glNewList(93, GL_COMPILE);
 		glBegin(GL_QUADS);
 			glTexCoord2f(0.0, 0.0);
@@ -3036,20 +2470,15 @@ void DisplayBricks ()
 {
 	// WALL_BRICK_YZ
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_YZ));
-	for (int i = 101; i < 111; i ++) 
-		glCallList(i);
-	for (i = 112; i < 126; i ++) 
-		glCallList(i);
-	for (i = 191; i < 195; i ++) 
-		glCallList(i);
-	
+	for (int i = 101; i < 111; i ++) glCallList(i);
+	for (i = 112; i < 126; i ++) glCallList(i);
+	for (i = 191; i < 195; i ++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, 1920.0);
 		glCallList(109);
 		glCallList(110);
 		glCallList(394);
 	glPopMatrix();
-
 	glCallList(222);
 	glCallList(394);
 	glCallList(396);
@@ -3061,36 +2490,25 @@ void DisplayBricks ()
 	
 	// WALL_BRICK_USD_YZ
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_USD_YZ));
-	for (i = 200; i < 202; i ++) 
-		glCallList(i);
-
+	for (i = 200; i < 202; i ++) glCallList(i);
 	glCallList(188);
 
 
 	// WALL_BRICK_XY
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_XY));
-	for (i = 135; i < 165; i++) 
-		glCallList(i);
-	for (i = 217; i < 222; i++) 
-		glCallList(i);
-	
+	for (i = 135; i < 165; i++) glCallList(i);
+	for (i = 217; i < 222; i++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, -1792.0);
 		glCallList(136);
 	glPopMatrix();
-
 	glPushMatrix();
 		glTranslatef(0.0, 1024.0, 0.0);
 		glCallList(152);
 	glPopMatrix();
-	
-	for (i = 195; i < 198; i++) 
-		glCallList(i);
-	
+	for (i = 195; i < 198; i++) glCallList(i);
 	glCallList(392);
-	for (i = 430; i < 434; i++) 
-		glCallList(i);
-	
+	for (i = 430; i < 434; i++) glCallList(i);
 	// Brick with map on
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAP_2));
 	glCallList(434);
@@ -3098,9 +2516,7 @@ void DisplayBricks ()
 
 	// WALL_BRICK_GAP_YZ
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_GAP_YZ));
-	for (i = 180; i < 182; i++) 
-		glCallList(i);
-	
+	for (i = 180; i < 182; i++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(0.0, 1024.0, 0.0);
 		glCallList(180);
@@ -3114,24 +2530,19 @@ void DisplayBricks ()
 	glCallList(182);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_GAP_1));
-	for (i = 183; i < 185; i++) 
-		glCallList(i);
+	for (i = 183; i < 185; i++) glCallList(i);
 
 	// WALL_BRICK_XY_END
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_XY_END));
-	for (i = 165; i < 168; i++) 
-		glCallList(i);
-	
+	for (i = 165; i < 168; i++) glCallList(i);
 	glCallList(134);
 	glCallList(185);
 	glCallList(187);
 	glCallList(399);
-
 	glPushMatrix();
 		glTranslatef(-32.0, 0.0, 640.0);
 		glCallList(399);
 	glPopMatrix();
-
 	step = -832.0;
 	for (i = 0; i < 2; i++)
 	{
@@ -3145,12 +2556,8 @@ void DisplayBricks ()
 		glTranslatef(0.0, 0.0, 321.0);
 		glCallList(167);
 	glPopMatrix();
-
-	for (i = 131; i < 132; i++) 
-		glCallList(i);
-	
+	for (i = 131; i < 132; i++) glCallList(i);
 	glCallList(132);
-	
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, 960.0);
 		glCallList(132);
@@ -3163,7 +2570,6 @@ void DisplayBricks ()
 		glTranslatef(0.0, 0.0, 9600.0);
 		glCallList(132);
 	glPopMatrix();
-
 	glCallList(133);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_XY_87WIDTH));
@@ -3172,10 +2578,8 @@ void DisplayBricks ()
 
 	// WALL_BRICK_YZ_END
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_YZ_END));
-	for (i = 126; i < 130; i ++) 
-		glCallList(i);
-		
-	glPushMatrix();
+	for (i = 126; i < 130; i ++) glCallList(i);
+		glPushMatrix();
 		glTranslatef(-896.0, 0.0, 0.0);
 		glCallList(128);
 	glPopMatrix();
@@ -3184,10 +2588,7 @@ void DisplayBricks ()
 		glCallList(129);
 		glCallList(168);
 	glPopMatrix();
-
-	for (i = 168; i < 170; i ++) 
-		glCallList(i);
-
+	for (i = 168; i < 170; i ++) glCallList(i);
 	glCallList(390);
 	glCallList(391);
 	glCallList(393);
@@ -3255,7 +2656,6 @@ void DrawBricks ()
 	tp.CreateDisplayList (XY,  133, 128.0, 128.0, 33808.0, 11344.0, 26624.0, 0.68, 4.0);	// next us window phys sci
 	tp.CreateDisplayList (XY,  143, 128.0, 128.0, 33895.0, 10000.0, 22096.0, 15.5, 16.0);	// end wall
 	tp.CreateDisplayList (XY,  186, 128.0, 128.0, 33808.0, 10000.0, 22096.0, 0.68, 1.5);	// end wall
-
 	// --------  (Phys Science Block) -------
 	tp.CreateDisplayList (XY,  197, 128.0, 128.0, 33808.0, 10640.0, 25344.0, 1.5, 1.5);		// end wall above telephones
 	tp.CreateDisplayList (XY,  196, 128.0, 128.0, 33936.0, 10640.0, 25344.0, 6.0, 1.505);	// end wall above telephones
@@ -3325,10 +2725,8 @@ void DrawBricks ()
 	// WALL_BRICK_GAP_YZ
 	tp.CreateDisplayList (YZ, 180, 128.0, 32.0, 33895.0, 10192.0, 22079.0, 5.0, 0.530);	// end chanc
 	tp.CreateDisplayList (YZ, 181, 128.0, 32.0, 33872.0, 10512.0, 30542.0, 2.5, 0.80);	// toilets phys sci
-
 	// WALL_BRICK_GAP2_YZ
 	tp.CreateDisplayList (YZ, 182, 128.0, 32.0, 33872.0, 10512.0, 27559.0, 2.5, 0.80);	// toilets phys sci
-
 	// WALL_GAP_1
 	tp.CreateDisplayList (XY, 183, 8.0, 128.0, 30792.0, 10000.0, 43056.0, 1.0, 6.0);	// near KBLT
 	tp.CreateDisplayList (XY, 184, 8.0, 128.0, 30792.0, 11024.0, 43056.0, 1.0, 6.5);	// as above but upstairs
@@ -3341,14 +2739,11 @@ void DisplayRoof()
 {
 	// main roof planks
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_PLANKS));
-	for (int i = 250; i < 253; i++) 
-		glCallList(i);
+	for (int i = 250; i < 253; i++) glCallList(i);
 	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_BEAM_1));
 	// corner beams
-	for (i = 1; i < 6; i ++) 
-		glCallList(i);
-	
+	for (i = 1; i < 6; i ++) glCallList(i);
 	step = -1689.0;
 	for (i = 0; i < 85; i++)
 	{
@@ -3357,13 +2752,12 @@ void DisplayRoof()
 			glCallList(253);
 		glPopMatrix();
 		step += 386.0;
-	}//*/
-
+	}
 	glPushMatrix();
 		glTranslatef(0.0, 0.0, -2005.0);
 		glCallList(253);
 	glPopMatrix();
-	glCallList(254);//*/
+	glCallList(254);
 
 	step = 214.0;
 	for (i = 0; i < 8; i++)
@@ -3412,8 +2806,7 @@ void DisplayRoof()
 	}
 
 	// spacers
-	for (i = 202; i < 204; i ++) 
-		glCallList(i);//
+	for (i = 202; i < 204; i ++) glCallList(i);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_BEAM_4));
 	for (i = 6; i < 11; i ++) 
@@ -3539,7 +2932,6 @@ void DisplayRoof()
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_BEAM_3_TOP));
 	glCallList(204);
 	glCallList(205);
-
 	glPushMatrix();
 		glTranslatef(64.0, 0.0, 0.0);
 		glCallList(205);
@@ -3547,18 +2939,14 @@ void DisplayRoof()
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_BEAM_2));
 	// spacers
-	for (i = 97; i < 101; i ++) 
-		glCallList(i);
+	for (i = 97; i < 101; i ++) glCallList(i);
 	// corner beams
-	for (i = 170; i < 175; i ++) 
-		glCallList(i);
+	for (i = 170; i < 175; i ++) glCallList(i);
 	
 
 	// Top of Roof
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_TOP));
-	for (i = 214; i < 216; i ++) 
-		glCallList(i);
-
+	for (i = 214; i < 216; i ++) glCallList(i);
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ROOF_TOP_LIB));
 		glCallList(216);
 }
@@ -3577,7 +2965,7 @@ void DrawRoof()
 			glTexCoord2f(2.0, 0.0);
 			glVertex3f(33848.0, 12140.72, 8100.0);
 		glEnd();
-	glEndList();
+		glEndList();
 	// Canteen Top of Roof
 	glNewList(215, GL_COMPILE);
 		glBegin(GL_QUADS);
@@ -3773,15 +3161,13 @@ void DrawRoof()
 	tp.CreateDisplayList (XY, 203, 128.0, 32.0, 4541.0, 11332.0, 41114.0, 213.5, 1.08);
 	// spacer above chanc
 	tp.CreateDisplayList (YZ, 204, 128.0, 128.0, 33808.0, 11999.0, 8100.0, 0.64, 109.35);
-	
 	tp.CreateYtoZWindowList (205, 33848.0, 11954.0, 144.0, 22096.0, 3248.0, 0.64, 25.375);
-	
 	// centre beam between chanc and phys sci
 	tp.CreateDisplayList (XZ, 426, 64.0, 128.0, 33848.0, 11954.0, 22096.0, 1.0, 25.375);
 	// top corner spacer
 	tp.CreateDisplayList (XY, 427, 64.0, 128.0, 33808.0, 11999.0, 22096.0, 0.75, 0.75);
 	
-	// Joins where roof slants 
+	// Joins where roof slants
 	DrawAngledRoofBeam(1, 33848.0 - 1867.0, 12012.72 - 687.13, 41226.0, 15.21);
 	DrawAngledRoofBeam(2, 33848.0 - 1481.0, 12012.72 - 545.07, 41612.0, 12.0);
 	DrawAngledRoofBeam(3, 33848.0 - 1095.0, 12012.72 - 403.01, 41998.0, 8.78);
@@ -3791,7 +3177,7 @@ void DrawRoof()
 	DrawAngledRoofBeam2(171, 32366.0, 11998.0 - 530.35, 43056.0 - 1441.0, 12.0);
 	DrawAngledRoofBeam2(172, 32752.0, 11998.0 - 388.28, 43056.0 - 1055.0, 8.78);
 	DrawAngledRoofBeam2(173, 33138.0, 11998.0 - 246.22, 43056.0 - 669.0,  5.57);
-	DrawAngledRoofBeam2(174, 33524.0, 11998.0 - 104.16, 43056.0 - 283.0,  2.36);//*/
+	DrawAngledRoofBeam2(174, 33524.0, 11998.0 - 104.16, 43056.0 - 283.0,  2.36);
 }
 
 // --------------------------------------------------------------------------------------
@@ -3859,20 +3245,16 @@ void DrawAngledRoofBeam2 (int listNo, GLdouble x, GLdouble y, GLdouble z, GLdoub
 void DisplayEntranceSteps ()
 {
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_PAVING_1));
-	for (int i = 258; i < 274 ; i ++) 
-		glCallList(i);
+	for (int i = 258; i < 274 ; i ++) glCallList(i);
 	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_EDGE));
-	for (i = 274; i < 290 ; i ++) 
-		glCallList(i);
+	for (i = 274; i < 290 ; i ++) glCallList(i);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_PAVING_1));
-	for (i = 290; i < 293 ; i ++) 
-		glCallList(i);
+	for (i = 290; i < 293 ; i ++) glCallList(i);
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_EDGE));
-	for (i = 293; i < 296 ; i ++) 
-		glCallList(i);
+	for (i = 293; i < 296 ; i ++) glCallList(i);
 
 
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEPS_LIBRARY));
@@ -3891,7 +3273,6 @@ void DisplayEntranceSteps ()
 		step += 128.0;
 		step2 += -51.0;
 	}
-
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEPS_LIBRARY_TOP));
 	glCallList(207);
 		glPushMatrix();
@@ -3902,7 +3283,6 @@ void DisplayEntranceSteps ()
 
 void DrawEntranceSteps ()
 {
-	//Steps
 	step = 10000.0;
 	stepLength = 9808.0;
 	for (int i = 258; i < 274 ; i ++)
@@ -3911,15 +3291,12 @@ void DrawEntranceSteps ()
 		tp.CreateDisplayList (XY,  i + 16, 64.0, 64.0, 31582.0, step - 64.0, stepLength, 35.0, 1.0);
 		step -= 48.0;
 		stepLength -= 142.0;
-
 		if ((i+3) % 4 == 0) 
 		{
 			stepLength -= 500.0;
 			step -= 48.0;
 		}
 	}
-
-	//Flat plains between 'flights' */
 	step = 9808.0;
 	stepLength = 8882.0;
 	for (i = 290; i < 293 ; i ++)
@@ -3930,7 +3307,7 @@ void DrawEntranceSteps ()
 		stepLength -= 1068.0;
 	}
 
-	// steps next to GCL1 */
+	// steps next to GCL1
 	tp.CreateDisplayList (XZ, 206, 128.0, 1024.0, 34508.0, 10000.0, 41127, 1.0, 0.942);
 	tp.CreateDisplayList (XZ, 207, 256.0, 1024.0, 34352.0, 10000.0, 41127, 0.609, 0.942);
 	
@@ -4678,9 +4055,9 @@ void DisplayLargerTextures ()
 	glCallList(366);
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(KBLT));
 	glCallList(367);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ENTRANCE)); //Draws image on left ------------------------------------
+	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ENTRANCE));
 	glCallList(368);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ENTRANCE_2)); //Draws image behind
+	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ENTRANCE_2));
 	glCallList(369);
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(COKE_MACHINE));
 	glCallList(370);
@@ -4707,7 +4084,7 @@ void DisplayLargerTextures ()
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WINDOW_17));
 	glCallList(380);
 
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(EXIT_EAST)); //--------------------------------------
+	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(EXIT_EAST));
 	glCallList(381);
 
 	// Chanc Doorways
@@ -4814,7 +4191,6 @@ void DisplayLargerTextures ()
 	// West Exit
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(EXIT_WEST));
 	glCallList(450);
-
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(ABOVE_WINDOW_BLOCK_CHANC));
 	glCallList(451);
 	// window next to steps
@@ -4823,9 +4199,6 @@ void DisplayLargerTextures ()
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(CARPET));
 	glCallList(453);
 
-	// Stairs to library after hours
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STAIRS_TO_AFTER_HOURS));
-	glCallList(510);
 }
 
 void DrawLargerTextures ()
@@ -4883,7 +4256,6 @@ void DrawLargerTextures ()
 	tp.CreateXtoYWindowList (379, 43152.0, 33232.0, 384.0, 10000.0, 768.0, 1.0, 1.0);		// GCL1 doorway	
 	tp.CreateXtoYWindowList (380, 43152.0, 32720.0, 384.0, 10000.0, 768.0, 1.0, 1.0);		// GCL1 doorway
 
-	//To vet science
 	tp.CreateYtoZWindowList (381, 36047, 9422.0, 1410.0, 41127.0, 1929.0, 0.725, 1.0);	// Exit East  375x512
 
 	tp.CreateXtoYWindowList (383, 43152.0, 11055.0, 1014.0, 10388.0, 380.0, 1.0, 0.75);	// 256x96 Library Window downstairs
@@ -4895,14 +4267,10 @@ void DrawLargerTextures ()
 	tp.CreateYtoZWindowList (414, 8803.0, 9998.0, 775.0, 43096.0, 77.0, 1.0, 0.5625);	// library post
 	tp.CreateYtoZWindowList (422, 33872.0, 10768.0, 64.0, 28646.0, 856.0, 1.0, 1.0);	// top of toilet door female
 	tp.CreateYtoZWindowList (423, 33872.0, 10768.0, 64.0, 30566.0, 840.0, 1.0, 1.0);	// top of toilet door male
-	//To chines garden
 	tp.CreateYtoZWindowList (450, 2352.0, 10000.0, 896.0, 41168.0, 1792.0, 1.0, 1.0);	// west exit
-
 	tp.CreateDisplayList (XZ, 451, 400.0, 256.0, 2352.0, 10896.0, 41168.0, 0.64, 7.0);  // above west exit
 	tp.CreateXtoYWindowList (452, 41127.0, 35280.0, 320.0, 10128.0, 704.0, 0.91, 1.0);	// w 233 window by steps (end of phys sci)
 	tp.CreateDisplayList (XZ, 453, 2.0, 2.0, 35856.0, 9400.0, 40500.0, 180.0, 1380.0);  // block at bottom of steps
-
-	//tp.CreateXtoYWindowList (510, )
 }
 
 // --------------------------------------------------------------------------------------
@@ -5179,12 +4547,10 @@ void DisplayStepBricks ()
 		glPushMatrix();
 			glTranslatef(step, 0.0, 0.0);
 			glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_STEPS));
-			for (int i = 478; i < 487; i ++) 
-				glCallList(i);
+			for (int i = 478; i < 487; i ++) glCallList(i);
 	
 			glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_STEPS_TOP));
-			for (i = 488; i < 493; i ++) 
-				glCallList(i);
+			for (i = 488; i < 493; i ++) glCallList(i);
 
 			glPushMatrix();
 				glTranslatef(31572.0, 9222.0, 6126.0);
@@ -5218,9 +4584,7 @@ void DisplayStepBricks ()
 	}
 	
 	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_STEPS_COVER));
-	for (int i = 497; i < 502; i ++) 
-		glCallList(i);
-	
+	for (int i = 497; i < 502; i ++) glCallList(i);
 	glPushMatrix();
 		glTranslatef(31572.0, 9222.0, 6126.0);
 		glRotatef( -18.69, 1.0f, 0.0f, 0.0f );
@@ -5305,226 +4669,6 @@ void DrawStepBricks ()
 	tp.CreateDisplayList (XZ, 505.0, 64.0, 128.0, 31518.0, 9974.0, 9332.4, 1.0, 4.545);
 	tp.CreateDisplayList (XY,  506.0, 64.0, 32.0, 31518.0, 10134.0, 10095.84, 1.0, 1.0);
 	tp.CreateDisplayList (XY,  507.0, 64.0, 64.0, 31518.0, 9914.0, 10095.84, 1.0, 3.4376);
-}	
-
-//--------------------------------------------------------------------------------------
-//  Display ECL Bridge
-//--------------------------------------------------------------------------------------
-void DisplayBridge()
-{
-	int i;
-	//pillars
-	step = 50120.0;
-	for (i = 0; i < 6; i++)
-	{
-		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
-
-		//Right pillars
-		glPushMatrix();
-			glTranslatef(-29100.0, 0.0, step);
-			glCallList(18);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(-29100.0, 0.0, step + 128);
-			glCallList(18);
-		glPopMatrix();
-
-		//left pillars
-		glPushMatrix();
-			glTranslatef(-27000.0, 0.0, step);
-			glCallList(18);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(-27000.0, 0.0, step + 128);
-			glCallList(18);
-		glPopMatrix();
-
-		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST_2));
-
-		//Right pillars
-		glPushMatrix();
-			glTranslatef(-29100.0, 0.0, step);
-			glCallList(19);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(-29100.0 + 128.0, 0.0, step);
-			glCallList(19);
-		glPopMatrix();
-
-		//Left posts
-		glPushMatrix();
-			glTranslatef(-27000.0, 0.0, step);
-			glCallList(19);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(-27000.0 + 128.0, 0.0, step);
-			glCallList(19);
-		glPopMatrix();
-
-		step -= 3000.0;
-	}
-
-	//Stair entry pillars
-	step = -27525.0;
-	for (i = 0; i < 2; i++)
-	{
-		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
-		glPushMatrix();
-			glTranslatef(step, 0.0, 52000);
-			glCallList(18);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(step, 0.0, 52000 + 128);
-			glCallList(18);
-		glPopMatrix();
-
-		glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST_2));
-		glPushMatrix();
-			glTranslatef(step, 0.0, 52000);
-			glCallList(19);
-		glPopMatrix();
-
-		glPushMatrix();
-			glTranslatef(step + 128, 0.0, 52000);
-			glCallList(19);
-		glPopMatrix();
-
-		step -= 1050;
-	}
-
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST));
-	glCallList(521);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(MAIN_POST_2));
-	glCallList(522);
-
-	//Pictures through bridge
-	//stairs
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STAIRS_TO_AFTER_HOURS));
-	glCallList(510);
-
-	//Left
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_LEFT_1));
-	glCallList(511);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_LEFT_2));
-	glCallList(512);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_LEFT_3));
-	glCallList(513);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_LEFT_4));
-	glCallList(514);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_LEFT_5));
-	glCallList(515);
-
-	//Right
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_RIGHT_1));
-	glCallList(516);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_RIGHT_2));
-	glCallList(517);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_RIGHT_3));
-	glCallList(518);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_RIGHT_4));
-	glCallList(519);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(BRIDGE_RIGHT_5));
-	glCallList(520);
-
-	//First Steps
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_PAVING_1));
-	for (i = 523; i < 534; i++)
-		glCallList(i);
-
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_EDGE));
-	for (i = 534; i < 545; i++)
-		glCallList(i);
-
-	//Second steps
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_PAVING_1));
-	for (i = 545; i < 556; i++)
-		glCallList(i);
-
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_EDGE));
-	for (i = 556; i < 567; i++)
-		glCallList(i);
-
-	//Middle break
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_PAVING_1));
-	glCallList(568);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(STEP_EDGE));
-	glCallList(569);
-
-	//Walls
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_XY));
-	for (i = 570; i < 575; i++)
-		glCallList(i);
-	glBindTexture(GL_TEXTURE_2D, tp.GetTexture(WALL_BRICK_YZ));
-	for (i = 575; i < 580; i++)
-		glCallList(i);
-
-}
-
-void DrawBridge()
-{
-	//Views through 'pillar windows' and stairs
-	//stairs to afterhours entrance
-	tp.CreateXtoYWindowList(510, 45290.0, 4760.0, 2000.0, 10000.0, 1000.0, 1.0, 1.0);
-
-	//left side views
-	step = 0;
-	for (i = 511; i <= 515; i++)
-	{
-		tp.CreateYtoZWindowList(i, 4800.0, 10500.0, 500.0, 48290.0 + step, -3000.0, 0.25, 1.0);
-		step += 3000.0; 
-	}
-
-	//right side views
-	tp.CreateYtoZWindowList(516, 2700.0, 10000.0, 1000.0, 45290.0, 3000.0, 1.0, 1.0);	//Right 1: full wall
-	
-	step = 0;
-	for (i = 517; i <= 520; i++)
-	{
-		tp.CreateYtoZWindowList(i, 2700.0, 10500.0, 500.0, 48290.0 + step, 3000.0, 0.25, 1.0);
-		step += 3000.0;
-	}
-	
-	//Half pillars
-	tp.CreateYtoZWindowList(521, 4800.0, 10000.0, 500.0, 60290.0, -15000.0, 1.0, 1.0);
-	tp.CreateYtoZWindowList(522, 2700.0, 10000.0, 500.0, 60290.0, -12000.0, 1.0, 1.0);
-
-	//First Steps
-	step = 10000.0;
-	stepLength = 62142.0;
-	for (i = 523; i < 534; i++)
-	{
-		tp.CreateDisplayList(XZ, i, 1024.0, 512.0, 3225.0, step, stepLength, 1.0, 0.277);
-		tp.CreateDisplayList(XY, i + 10, 64.0, 64.0, 3225.0, step - 64.0, stepLength + 142.0, 16.0, 1.0);
-		step -= 48.0;
-		stepLength += 142.0;
-	}
-
-	//Mid point
-	tp.CreateDisplayList(XZ, 568, 1024.0, 512.0, 3225.0, 9520.0, 63690.0, 2.0, 1.5);
-	//tp.CreateDisplayList(XY, 565, 64.0, 64.0, 3225.0, 6520.0 - 64.0, 63832.0, 16.0, 1.0);
-
-	//Second steps
-	step = 9520.0;
-	stepLength = 63548.0;
-	for (int i = 545; i < 556; i++)
-	{
-		tp.CreateDisplayList(XZ, i, 1024.0, 512.0, 4325.0, step, stepLength, 1.0, 0.277);
-		tp.CreateDisplayList(XY, i + 10, 64.0, 64.0, 4325.0, step - 64.0, stepLength, 16.0, 1.0);
-		step -= 48.0;
-		stepLength -= 142.0;
-	}
-
-	//walls
-	tp.CreateDisplayList(YZ, 570, 128.0, 128.0, 4800.0, 10000.0, 60300.0, 10.0, 15.0); //left end
-	tp.CreateDisplayList(YZ, 571, 128.0, 128.0, 2700.0, 10000.0, 60300.0, 10.0, 15.0); //right end
-	tp.CreateDisplayList(XY, 575, 128.0, 128.0, 4800.0, 10000.0, 62200.0, -4.5, 10.0); //left stair entry
-	tp.CreateDisplayList(XY, 576, 128.0, 128.0, 3225.0, 10000.0, 62200.0, -4.5, 10.0); //right stair entry
-
 }
 
 //--------------------------------------------------------------------------------------
@@ -5565,23 +4709,4 @@ void CreateTextureList()
 	DrawCylinders ();			// 437-441
 	DrawMapExit ();				// 448-449, 454
 	// 455-459
-	DrawBridge ();				// 508*/
-}
-
-//--------------------------------------------------------------------------------------
-//  Increments frame count used for setting movement speed
-//--------------------------------------------------------------------------------------
-void IncrementFrameCount()
-{
-	double t = ((GLdouble)(clock()-lastClock))/(GLdouble)CLOCKS_PER_SEC;  
-	frameCount ++;
-
-	// reset after t
-	if (t > 0.1)
-	{
-		stepIncrement = t/frameCount * 1400;
-		angleIncrement = t/frameCount;
-		frameCount = 0;
-		lastClock = clock();
-	}
 }

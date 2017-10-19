@@ -17,7 +17,7 @@
 /**
  * class Score: This class displays the score, bonus and time on the screen
  *
- * 
+ * @author Shay Leary
  */
 
 // make sure to link this librarys or error will occur

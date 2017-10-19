@@ -8,94 +8,143 @@
 
 //--------------------------------------------------------------------------------------
 
-/** @class AABBLinkedList.h
-	@brief Linked list stores AABBNodes
+/** @class AABBLinkedList
+ *	@brief Linked list stores AABBNode
+ *
+ *	Header file for the AABBLinkedList class
+ *	Linked List used to store nodes (AABBNode) which contain the co-ordinates of the 
+ *	boundings boxes which are used for the collsion detection.
+ *	The program splits the world into four quadrants and creates a linked list to
+ *  store the bounding box details for each
+ *
+ *	@author Shay Leary
+ *	@version 1
+ *	@date March 2005
+ */
 
-	Linked List used to store nodes (AABBNode) which contain the co-ordinates of the
-	boundings boxes which are used for the collsion detection.
-	The program splits the world into four quadrants and creates a linked list to
-	store the bounding box details for each
-
-	@author Shay Leary
-	@verion 01
-	@date 2005
-
-	@author Aaron Thomson, Mathew de Vene
-	@ version 1.1 Added comments
-	@date 2017
-*/
+//--------------------------------------------------------------------------------------
 
 class AABBLinkedList
 {
 public:
-	/** @brief Constructor
+	/* @brief constructor 
+	 *
+	 * creates pointer to first node 
 	 */
 	AABBLinkedList() {m_first = new AABBNode;}
-	
-	/** @brief Virtual destructor
+
+	/** @brief destructor
 	 */
 	virtual ~AABBLinkedList() {Clear();}
 
 	//----------------------------------------------------------------------------------
 
-	/** @brief Clears memory
+	/* @brief clears linked list and frees memory 
 	 */
 	void Clear();
 
-	/** @brief 
+	/**	@brief add a node to the start of the linked list 
+	 *
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
 	 */
-	bool AddToStart (GLdouble maxX, GLdouble minX, GLdouble maxY,
-				     GLdouble minY, GLdouble maxZ, GLdouble minZ);
+	bool AddToStart (GLdouble maxX, GLdouble minX, GLdouble maxY, GLdouble minY, GLdouble maxZ, GLdouble minZ);
 	
-	/** @brief
+	/**	@brief set the values of the node data 
+	 *
+	 *	@param const int&
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
+	 *	@param GLdouble
 	 */
-	void SetData(const int &ptrCount,
-				 const GLdouble maxX, const GLdouble minX,
-				 const GLdouble maxY, const GLdouble minY,
-				 const GLdouble maxZ, const GLdouble minZ);
+	void SetData(const int &ptrCount, const GLdouble maxX, const GLdouble minX,
+				 const GLdouble maxY, const GLdouble minY, const GLdouble maxZ, const GLdouble minZ);
 
-	//----------------------------------------------------------------------------------
-	//  Get Methods
-	//----------------------------------------------------------------------------------
 	/** @brief Returns max x value
 	 *
-	 *	
+	 *	From an index number, returns a maximum x value from the list
+	 *
+	 *	@param int
 	 */
 	GLdouble GetMaxX (int ptrCount);
-	///Getter for for MinX
+
+	/** @brief Returns min x value
+	*
+	*	From an index number, returns a mainimum x value from the list
+	*
+	*	@param int
+	*/
 	GLdouble GetMinX (int ptrCount);
-	///Getter for MaxY
+
+	/** @brief Returns max y value
+	*
+	*	From an index number, returns a maximum y value from the list
+	*
+	*	@param int
+	*/
 	GLdouble GetMaxY (int ptrCount);
-	///Getter for Min Y
+
+	/** @brief Returns min y value
+	*
+	*	From an index number, returns a mainimum y value from the list
+	*
+	*	@param int
+	*/
 	GLdouble GetMinY (int ptrCount);
-	///Getter for Max Z
+
+	/** @brief Returns max z value
+	*
+	*	From an index number, returns a maximum z value from the list
+	*
+	*	@param int
+	*/
 	GLdouble GetMaxZ (int ptrCount);
-	///Getter for Min Z
+
+	/** @brief Returns min z value
+	*
+	*	From an index number, returns a mainimum z value from the list
+	*
+	*	@param int
+	*/
 	GLdouble GetMinZ (int ptrCount);
 	
-	// Return size of list
+	/** @brief Return size of list 
+	 */
 	int GetListSize ();
 	
-	// Return the address of the link to the next node in the list
-    AABBNode *GetNext () const {return m_first->GetNext();}
-	// Return the address of the link to the first node in the list
-	AABBNode *GetFirst() const {return m_first;}
+	/** @brief Return the address of the link to the next node in the list 
+	*/
+    AABBNode *GetNext () const { return m_first->GetNext(); }
+
+	/** @brief Return the address of the link to the first node in the list 
+	*/
+	AABBNode *GetFirst() const { return m_first; }
 
 //--------------------------------------------------------------------------------------
 
 private:
-	/// pointer to first node in list
+	/*!< pointer to first node in list */
 	AABBNode *m_first;
 
-	/// used to clear memory
+	/** @brief used to clear memory 
+	*/
 	void Delete (AABBNode *before);
 
-	/// Privatised copy constructor
+	/** @brief copy constructor 
+	*/
 	AABBLinkedList (const AABBLinkedList &ll) {};
-	/// Privatised assignmen operator
+
+	/** @brief assignment operator
+	*/
 	AABBLinkedList &operator = (const AABBLinkedList &ll) {};
 };
 
 #endif
-
 //--------------------------------------------------------------------------------------

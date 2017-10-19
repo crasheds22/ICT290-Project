@@ -62,11 +62,13 @@ void Camera::DirectionFB(int const & tempMove)
 {
 	m_deltaMoveFB = tempMove;
 }
+
 //--------------------------------------------------------------------------------------
 void Camera::DirectionLR(int const & tempMove)
 {
 	m_deltaMoveLR = tempMove;
 }
+
 //--------------------------------------------------------------------------------------
 // Not used but allows up and don movement
 void Camera::DirectionUD(int const & tempMove)
@@ -276,7 +278,7 @@ void Camera::SetPlains(const int & moveX, const int & moveZ)
 				
 				if ((m_plainNo != i) && m_plainHeight != m_Plain.GetYstart(i))
 				{
-					//stepSound->Play();
+					stepSound->Play();
 				}
 
 
@@ -390,11 +392,20 @@ void Camera::Position (GLdouble const & tempX, GLdouble const & tempY,
 //----------------------------------------------------------------------------------------
 void Camera::CheckCamera()
 {
-	if (MoveFBOK()) MoveFB();
-	if (MoveLROK()) MoveLR();
-	if (MoveUDOK()) MoveUD();
-	if (RotateLROK()) RotateLR();
-	if (LookUDOK()) LookUD();
+	if (MoveFBOK()) 
+		MoveFB();
+	
+	if (MoveLROK()) 
+		MoveLR();
+	
+	if (MoveUDOK()) 
+		MoveUD();
+	
+	if (RotateLROK()) 
+		RotateLR();
+	
+	if (LookUDOK()) 
+		LookUD();
 }
 
 
